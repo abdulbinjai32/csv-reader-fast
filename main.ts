@@ -3,13 +3,20 @@
 // Outside a container MAKEFUN_INPUT_DIR and MAKEFUN_OUTPUT_DIR stand in for /input and /output.
 //
 // V8's incremental marking is turned off before solve.js is imported, as the house driver does, so the
-// contest's CPU time is spent reading text rather than tracing the heap's growth.
+// contest's CPU time is spent reading text rather than tracing the heap's growth. Three more flags cut
+// the time a single cold run spends compiling: the baseline compiler takes every function eagerly
+// (--always-sparkplug), the optimizing tier never runs (--max-opt=0), and no compile is repeated in the
+// background or thrown away (--no-concurrent-recompilation --no-flush-bytecode). A run over this
+// competition's sets is one pass of a loop that is mostly indexOf and slice, which the baseline code
+// already runs as fast as optimized code, so paying for TurboFan costs more than it returns.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { setFlagsFromString } from 'node:v8';
 
-setFlagsFromString('--no-incremental-marking');
+setFlagsFromString(
+  '--no-incremental-marking --always-sparkplug --max-opt=0 --no-concurrent-recompilation --no-flush-bytecode',
+);
 
 const { run } = (await import(new URL('./solve.js', import.meta.url).href)) as {
   run: (input: { text: string; header: boolean }) => unknown;
